@@ -166,7 +166,7 @@ function loginBox(reg){
 const closeM=()=>$('#ov').innerHTML='';
 async function doLogin(){const u=$('#lu').value.trim(),p=$('#lp').value;
  if(u===ADMIN.u&&p===ADMIN.p){me='@admin';await push();closeM();toast('ยินดีต้อนรับแอดมิน');return go('admin')}
- await load();if(db.users[u]&&db.users[u].pw===p){me=u;await push();closeM();toast('เข้าสู่ระบบสำเร็จ');go('home')}else toast('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง',1)}
+ await load();if(db.users[u]&&db.users[u].pw===p){if(db.users[u].banned)return toast('บัญชีนี้ถูกระงับการใช้งาน',1);me=u;await push();closeM();toast('เข้าสู่ระบบสำเร็จ');go('home')}else toast('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง',1)}
 async function doReg(){const u=$('#lu').value.trim(),p=$('#lp').value,p2=$('#lp2').value;
  if(u.length<3||p.length<4)return toast('ชื่ออย่างน้อย 3 ตัว รหัสผ่านอย่างน้อย 4 ตัว',1);
  if(p!==p2)return toast('รหัสผ่านและยืนยันรหัสผ่านไม่ตรงกัน',1);
@@ -184,7 +184,8 @@ const catName=id=>esc(db.cats.find(c=>c.id==id)?.name||'-');
 function aUsers(e){
  const n=Object.keys(db.users);
  e.innerHTML=`<div class="two"><div class="box"><b>เพิ่มเงินให้ผู้เล่น</b><br><br><label>เลือกผู้เล่น</label><select id="gu">${n.map(u=>`<option value="${esc(u)}">${esc(u)} (฿${(+db.users[u].bal||0).toFixed(2)})</option>`).join('')||'<option value="">ยังไม่มีผู้เล่น</option>'}</select><label>จำนวนเงิน (บาท)</label><input id="ga" type="number" min="1" value="100"><button class="btn" onclick="giveMoney(this)">ให้เงิน</button></div>
- <table><tr><th>ผู้เล่น</th><th>ยอดเงิน</th></tr>${n.map(u=>`<tr><td>${esc(u)}</td><td>฿${(+db.users[u].bal||0).toFixed(2)}</td></tr>`).join('')||'<tr><td colspan="2" class="mut">ยังไม่มีผู้เล่น</td></tr>'}</table></div>`}
+ <table><tr><th>ผู้เล่น</th><th>ยอดเงิน</th><th>สถานะ</th><th></th></tr>${n.map(u=>{const bn=!!db.users[u].banned;return `<tr><td>${esc(u)}</td><td>฿${(+db.users[u].bal||0).toFixed(2)}</td><td>${bn?'<span style="color:var(--red)">ถูกแบน</span>':'<span style="color:var(--ok)">ปกติ</span>'}</td><td><button class="btn ${bn?'g':'d'}" onclick="toggleBan('${encodeURIComponent(u)}')">${bn?'ปลดแบน':'แบน'}</button></td></tr>`}).join('')||'<tr><td colspan="4" class="mut">ยังไม่มีผู้เล่น</td></tr>'}</table></div>`}
+async function toggleBan(enc){if(!isAdmin())return;const u=decodeURIComponent(enc);await tx(()=>{if(db.users[u])db.users[u].banned=!db.users[u].banned});toast('อัปเดตสถานะแล้ว');render()}
 async function giveMoney(b){
  if(!isAdmin())return;
  const u=$('#gu').value,v=+$('#ga').value;
@@ -206,7 +207,12 @@ async function addCat(b){const n=$('#cn').value.trim();if(!n)return toast('ก�
 async function delCat(id){if(!confirm('ลบหมวดหมู่นี้และสินค้าในหมวดทั้งหมด?'))return;await tx(()=>{db.cats=db.cats.filter(c=>c.id!==id);db.prods=db.prods.filter(p=>p.cat!==id)});toast('ลบแล้ว');render()}
 function aProds(e){
  e.innerHTML=`<div class="two"><div class="box"><b>เพิ่มสินค้า</b><br><br><label>หมวดหมู่</label><select id="pc">${db.cats.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select><label>ชื่อสินค้า</label><input id="pn"><label>ราคา (บาท)</label><input id="pp" type="number" min="0"><label>รายละเอียด</label><input id="pd"><label>รูปสินค้า (จากไฟล์)</label><input id="pi" type="file" accept="image/*"><label>สต็อกเริ่มต้น (1 บรรทัด = 1 ชิ้น)</label><textarea id="ps" rows="3"></textarea><button class="btn" onclick="addProd(this)">เพิ่มสินค้า</button></div>
- <table><tr><th>รูป</th><th>สินค้า</th><th>ราคา</th><th></th></tr>${db.prods.map(p=>`<tr><td>${p.img?`<img class="thumb" src="${p.img}">`:''}</td><td>${esc(p.name)}<br><span class="mut">${catName(p.cat)}</span></td><td>฿${p.price}</td><td><button class="btn d" onclick="delProd(${p.id})">ลบ</button></td></tr>`).join('')}</table></div>`}
+ <table><tr><th>รูป</th><th>สินค้า</th><th>ราคา</th><th></th></tr>${db.prods.map(p=>`<tr><td>${p.img?`<img class="thumb" src="${p.img}">`:''}</td><td>${esc(p.name)}<br><span class="mut">${catName(p.cat)}</span></td><td>฿${p.price}</td><td style="white-space:nowrap"><button class="btn g" onclick="editProdBox(${p.id})">แก้ไข</button> <button class="btn d" onclick="delProd(${p.id})">ลบ</button></td></tr>`).join('')}</table></div>`}
+function editProdBox(id){const p=db.prods.find(x=>x.id===id);if(!p)return;
+ $('#ov').innerHTML=`<div class="modal" onclick="if(event.target===this)closeM()"><div class="box"><h2 style="margin-bottom:18px;font-size:22px">แก้ไขสินค้า</h2><label>หมวดหมู่</label><select id="epc">${db.cats.map(c=>`<option value="${c.id}" ${c.id===p.cat?'selected':''}>${esc(c.name)}</option>`).join('')}</select><label>ชื่อสินค้า</label><input id="epn" value="${esc(p.name)}"><label>ราคา (บาท)</label><input id="epp" type="number" min="0" value="${p.price}"><label>รายละเอียด</label><input id="epd" value="${esc(p.desc)}"><label>เปลี่ยนรูปสินค้า (เว้นว่างถ้าไม่เปลี่ยน)</label><input id="epi" type="file" accept="image/*"><div style="display:flex;gap:10px;margin-top:6px"><button class="btn g" style="flex:1" onclick="closeM()">ยกเลิก</button><button class="btn" style="flex:1" onclick="saveProd(${id},this)">บันทึก</button></div></div></div>`}
+async function saveProd(id,b){const n=$('#epn').value.trim();if(!n||!$('#epc').value)return toast('เลือกหมวดหมู่และกรอกชื่อสินค้า',1);b.disabled=true;b.textContent='กำลังบันทึก...';
+ const f=$('#epi').files[0],im=f?await img(f,700):null;
+ if(await tx(()=>{const p=db.prods.find(x=>x.id===id);if(!p)return false;p.cat=+$('#epc').value;p.name=n;p.price=+$('#epp').value||0;p.desc=$('#epd').value;if(im)p.img=im})){closeM();toast('บันทึกการแก้ไขแล้ว');render()}else{b.disabled=false;b.textContent='บันทึก'}}
 async function addProd(b){const n=$('#pn').value.trim();if(!n||!$('#pc').value)return toast('เลือกหมวดหมู่และกรอกชื่อสินค้า',1);b.disabled=true;b.textContent='กำลังบันทึก...';
  const im=await img($('#pi').files[0],700),o={id:uid(),cat:+$('#pc').value,name:n,price:+$('#pp').value||0,desc:$('#pd').value,img:im,stock:$('#ps').value.split('\n').map(s=>s.trim()).filter(Boolean)};
  if(await tx(()=>{db.prods.push(o)})){toast('เพิ่มสินค้าแล้ว');render()}else{b.disabled=false;b.textContent='เพิ่มสินค้า'}}
@@ -224,5 +230,5 @@ function maybeWelcome(){
  $('#ov').innerHTML=`<div class="modal" onclick="if(event.target===this)closeWelcome()"><div style="position:relative;max-width:480px;width:100%;animation:pop .3s var(--bounce)"><button onclick="closeWelcome()" aria-label="ปิด" style="position:absolute;top:-14px;right:-14px;width:32px;height:32px;border-radius:50%;background:#000;border:1px solid var(--line2);color:#fff;cursor:pointer;font-size:14px;z-index:2">✕</button><img src="${db.settings.welcomeImg}" style="width:100%;border-radius:16px;border:1px solid var(--line);display:block;cursor:pointer" onclick="closeWelcome()"><label style="display:flex;align-items:center;gap:8px;margin-top:12px;color:var(--mut);font-size:13px;cursor:pointer"><input type="checkbox" id="wpc" style="width:auto;margin:0">ไม่แสดงอีกใน 24 ชั่วโมง</label></div></div>`}
 function closeWelcome(){try{if($('#wpc')?.checked)localStorage.setItem('67wpop',Date.now()+86400000)}catch(e){}closeM()}
 (async()=>{await load();render();maybeWelcome();
- if(DB_URL)setInterval(async()=>{if(view==='admin'||$('#ov').innerHTML)return;await load();const s=JSON.stringify(db);if(s!==last){last=s;render()}},6000)})();
+ if(DB_URL)setInterval(async()=>{if(view==='admin'||$('#ov').innerHTML)return;await load();if(me&&!isAdmin()&&db.users[me]?.banned){toast('บัญชีนี้ถูกระงับการใช้งาน',1);return logout()}const s=JSON.stringify(db);if(s!==last){last=s;render()}},6000)})();
 </script></body></html>
