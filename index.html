@@ -37,7 +37,7 @@ h1{font-size:clamp(26px,4vw,36px);font-weight:700;line-height:1.2}h1 span{font-w
 .cat{animation:rise .45s var(--bounce) both;animation-delay:calc(var(--i,0)*70ms);cursor:pointer}
 .ban{aspect-ratio:3.6/1;border-radius:14px;overflow:hidden;position:relative;background:linear-gradient(var(--panel),var(--panel)) padding-box,linear-gradient(135deg,var(--line),var(--line)) border-box;border:1px solid transparent;display:grid;place-items:center;font-size:52px;font-weight:800;color:#ffffff14;transition:border-color .3s,box-shadow .3s,background .3s}
 .cat:hover .ban{background:linear-gradient(var(--panel),var(--panel)) padding-box,linear-gradient(135deg,#c026d3,#7c3aed) border-box;box-shadow:0 14px 34px -12px #9333ea6b}
-.ban img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;transition:transform .5s}.cat:hover .ban img{transform:scale(1.03)}
+.ban img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .5s}.cat:hover .ban img{transform:scale(1.04)}
 .cap{display:flex;justify-content:space-between;align-items:center;padding:14px 2px 0;font-weight:600;letter-spacing:.2px}
 .cap em{font-style:normal;font-size:11px;color:var(--mut);margin-right:12px}.cap i{font-style:normal;font-weight:300;font-size:13px;color:var(--mut)}
 .pg{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:18px}
